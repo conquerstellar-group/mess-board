@@ -1,0 +1,33 @@
+services:
+
+  # ── Backend (Bun + Facebook + AI Agent) ──
+  backend:
+    build: ./be
+    container_name: mess-chatbot-be
+    restart: unless-stopped
+    expose:
+      - 3001
+    environment:
+      - FB_PAGE_TOKEN=${FB_PAGE_TOKEN}
+      - AI_HOST=${AI_HOST:-http://192.168.3.4:8080/v1}
+    networks:
+      - app-net
+
+  # ── Nginx (reverse proxy + static files) ──
+  nginx:
+    image: nginx:alpine-slim
+    container_name: mess-chatbot-nginx
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./fe/public:/usr/share/nginx/html:ro
+    depends_on:
+      - backend
+    networks:
+      - app-net
+
+networks:
+  app-net:
+    driver: bridge

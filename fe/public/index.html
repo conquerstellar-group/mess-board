@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Messenger AI Chat - Hỗ trợ khách hàng thông minh</title>
+  <meta name="description" content="Nền tảng hỗ trợ khách hàng tự động qua Facebook Messenger với AI thông minh" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+
+<div class="app-container" id="app-container">
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar glass" id="sidebar">
+    <div class="sidebar-header">
+      <h1>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--primary)">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+        Messenger AI
+        <span class="badge" id="total-badge">0</span>
+      </h1>
+      <p>Hỗ trợ khách hàng thông minh</p>
+    </div>
+    <div class="conversation-list" id="conversation-list">
+      <div class="empty-state">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+        Chưa có hội thoại nào<br/>Khách hàng mới sẽ xuất hiện tại đây
+      </div>
+    </div>
+    <div class="system-bar">
+      <div class="system-bar-left">
+        <span class="status-dot disconnected" id="ws-status"></span>
+        <span id="system-status">Đang kết nối...</span>
+      </div>
+      <div class="system-bar-right">
+        <span>v1.0.0</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── Main Content ── -->
+  <main class="main-content glass" id="main-content">
+
+    <!-- No chat selected -->
+    <div class="no-chat-selected" id="no-chat-selected" style="display:flex">
+      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+      </svg>
+      <h2>Chọn một hội thoại</h2>
+      <p>Chọn hội thoại từ danh sách bên trái để xem chi tiết cuộc trò chuyện giữa AI và khách hàng</p>
+    </div>
+
+    <!-- Chat area (hidden by default, shown via JS) -->
+    <div id="chat-area" style="display:none;flex:1;flex-direction:column">
+      <div class="chat-header">
+        <div class="chat-header-left">
+          <button class="back-button" onclick="backToSidebar()" aria-label="Quay lại">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="15 18 9 12 15 6"/>
+            </svg>
+          </button>
+          <div>
+            <div class="chat-header-name" id="chat-header-name"></div>
+            <div class="chat-header-status" id="chat-header-status"></div>
+          </div>
+        </div>
+      </div>
+      <div class="chat-messages" id="chat-messages"></div>
+      <div class="chat-input-bar" id="chat-input-bar" style="display:none">
+        <div class="chat-input-wrapper">
+          <input type="text" class="chat-input" id="chat-input" placeholder="Nhập tin nhắn..." autocomplete="off">
+          <button class="chat-send-btn" id="chat-send-btn" aria-label="Gửi">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+</div>
+
+<script src="/js/app.js"></script>
+</body>
+</html>
