@@ -1,0 +1,10 @@
+services:
+  frontend:
+    build:
+      context: .
+      args:
+        API_HOST: ${API_HOST}
+    container_name: mess-chatbot-fe
+    restart: unless-stopped
+    ports:
+      - "8080:80"

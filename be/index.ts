@@ -22,6 +22,7 @@ import type { WsMessage, FacebookMessaging, WsFetchHistory, WsSendMessage } from
 // ── Configuration ──
 const PORT = 3001;
 const PAGE_ACCESS_TOKEN = process.env.FB_PAGE_TOKEN ?? "";
+const CORS_ORIGIN = process.env.CORS_ORIGIN ?? "*";
 let AI_MODEL = "default";
 
 // ── Clean AI response: strip reasoning steps ──
@@ -298,7 +299,7 @@ const server = Bun.serve<{ isFrontend?: boolean }>({
 
     // ── CORS ──
     const corsHeaders = {
-      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Origin": CORS_ORIGIN,
       "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type",
     };

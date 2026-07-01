@@ -327,8 +327,10 @@ function removeLiveReasoning() {
 
 // ── WebSocket ──
 function connectWs() {
-  const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const wsUrl = `${protocol}//${window.location.host}/ws`;
+  const apiHost = window.API_HOST || window.location.host;
+  const isLocal = apiHost.startsWith('localhost') || apiHost.startsWith('127.');
+  const protocol = isLocal ? (location.protocol === 'https:' ? 'wss:' : 'ws:') : 'wss:';
+  const wsUrl = `${protocol}//${apiHost}/ws`;
 
   try {
     ws = new WebSocket(wsUrl);

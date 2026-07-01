@@ -1,0 +1,160 @@
+name: Build and Push Image
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch: {}
+
+concurrency:
+  group: deploy-${{ github.ref_name }}
+  cancel-in-progress: true
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      be: ${{ steps.filter.outputs.be }}
+      fe: ${{ steps.filter.outputs.fe }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Detect changed paths
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            be:
+              - 'be/**'
+            fe:
+              - 'fe/**'
+
+  build_and_push_be:
+    needs: changes
+    if: needs.changes.outputs.be == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    environment: env-main
+    permissions:
+      contents: read
+      packages: write
+    env:
+      IMAGE_NAME: mess-board-be
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to GHCR
+        run: echo "${{ secrets.PACKAGE_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+
+      - name: Get next version tag
+        id: version
+        run: |
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          IMAGE=${{ env.REGISTRY }}/${OWNER}/${{ env.IMAGE_NAME }}
+
+          # List tags via GitHub API (user account)
+          TAGS=$(curl -s -H "Authorization: Bearer ${{ secrets.PACKAGE_TOKEN }}" \
+            "https://api.github.com/user/packages/container/${{ env.IMAGE_NAME }}/versions" \
+            | jq -r '.[].metadata.container.tags[]' 2>/dev/null || true)
+
+          # Find latest vX.Y.Z tag
+          LATEST=$(echo "$TAGS" | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)
+
+          if [ -z "$LATEST" ]; then
+            NEXT="v1.0.0"
+          else
+            PATCH=$(echo "$LATEST" | cut -d. -f3)
+            NEXT="v$(echo "$LATEST" | cut -d. -f1-2 | sed 's/v//').$(( PATCH + 1 ))"
+          fi
+
+          echo "tag=$NEXT" >> $GITHUB_OUTPUT
+          echo "image=$IMAGE" >> $GITHUB_OUTPUT
+          echo "Next version: $NEXT"
+
+      - name: Build and push image
+        run: |
+          IMAGE=${{ steps.version.outputs.image }}
+          TAG=${{ steps.version.outputs.tag }}
+          docker build \
+            --label "org.opencontainers.image.revision=${{ github.sha }}" \
+            -t $IMAGE:$TAG ./be
+          docker push $IMAGE:$TAG
+
+      - name: Cleanup old images (keep 2 latest)
+        run: |
+          VERSIONS=$(curl -s -H "Authorization: Bearer ${{ secrets.PACKAGE_TOKEN }}" \
+            "https://api.github.com/user/packages/container/${{ env.IMAGE_NAME }}/versions?per_page=100")
+
+          DELETE_IDS=$(echo "$VERSIONS" | jq -r '.[2:] | .[].id' 2>/dev/null || true)
+
+          for ID in $DELETE_IDS; do
+            echo "Deleting version ID: $ID"
+            curl -s -X DELETE \
+              -H "Authorization: Bearer ${{ secrets.PACKAGE_TOKEN }}" \
+              "https://api.github.com/user/packages/container/${{ env.IMAGE_NAME }}/versions/$ID" || true
+          done
+
+  build_and_push_fe:
+    needs: changes
+    if: needs.changes.outputs.fe == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    environment: env-main
+    permissions:
+      contents: read
+      packages: write
+    env:
+      IMAGE_NAME: mess-board-fe
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to GHCR
+        run: echo "${{ secrets.PACKAGE_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+
+      - name: Get next version tag
+        id: version
+        run: |
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          IMAGE=${{ env.REGISTRY }}/${OWNER}/${{ env.IMAGE_NAME }}
+
+          # List tags via GitHub API (user account)
+          TAGS=$(curl -s -H "Authorization: Bearer ${{ secrets.PACKAGE_TOKEN }}" \
+            "https://api.github.com/user/packages/container/${{ env.IMAGE_NAME }}/versions" \
+            | jq -r '.[].metadata.container.tags[]' 2>/dev/null || true)
+
+          # Find latest vX.Y.Z tag
+          LATEST=$(echo "$TAGS" | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)
+
+          if [ -z "$LATEST" ]; then
+            NEXT="v1.0.0"
+          else
+            PATCH=$(echo "$LATEST" | cut -d. -f3)
+            NEXT="v$(echo "$LATEST" | cut -d. -f1-2 | sed 's/v//').$(( PATCH + 1 ))"
+          fi
+
+          echo "tag=$NEXT" >> $GITHUB_OUTPUT
+          echo "image=$IMAGE" >> $GITHUB_OUTPUT
+          echo "Next version: $NEXT"
+
+      - name: Build and push image
+        run: |
+          IMAGE=${{ steps.version.outputs.image }}
+          TAG=${{ steps.version.outputs.tag }}
+          docker build \
+            --label "org.opencontainers.image.revision=${{ github.sha }}" \
+            -t $IMAGE:$TAG ./fe
+          docker push $IMAGE:$TAG
+
+      - name: Cleanup old images (keep 2 latest)
+        run: |
+          VERSIONS=$(curl -s -H "Authorization: Bearer ${{ secrets.PACKAGE_TOKEN }}" \
+            "https://api.github.com/user/packages/container/${{ env.IMAGE_NAME }}/versions?per_page=100")
+
+          DELETE_IDS=$(echo "$VERSIONS" | jq -r '.[2:] | .[].id' 2>/dev/null || true)
+
+          for ID in $DELETE_IDS; do
+            echo "Deleting version ID: $ID"
+            curl -s -X DELETE \
+              -H "Authorization: Bearer ${{ secrets.PACKAGE_TOKEN }}" \
+              "https://api.github.com/user/packages/container/${{ env.IMAGE_NAME }}/versions/$ID" || true
+          done
